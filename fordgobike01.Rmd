@@ -1,0 +1,85 @@
+---
+title: "Ford Go Bike"
+output: html_notebook
+---
+
+In this notebook I download and unzip the Ford Go Bike data. 
+
+library(tidyverse)
+```{r}
+library(tidyverse)
+library(tictoc)
+```
+
+
+
+
+Download the files.  First one is not zipped, the remaining are zipped.
+
+```{r}
+URL <- "https://s3.amazonaws.com/fordgobike-data/2017-fordgobike-tripdata.csv"
+download.file(URL, destfile = "./data/2017-fordgobike-tripdata.csv", method="curl")
+URL <- "https://s3.amazonaws.com/fordgobike-data/201801-fordgobike-tripdata.csv.zip"
+download.file(URL, destfile = "./data/201801-fordgobike-tripdata.csv.zip", method="curl")
+URL <- "https://s3.amazonaws.com/fordgobike-data/201802-fordgobike-tripdata.csv.zip"
+download.file(URL, destfile = "./data/201802-fordgobike-tripdata.csv.zip", method="curl")
+URL <- "https://s3.amazonaws.com/fordgobike-data/201803-fordgobike-tripdata.csv.zip"
+download.file(URL, destfile = "./data/201803-fordgobike-tripdata.csv.zip", method="curl")
+URL <- "https://s3.amazonaws.com/fordgobike-data/201804-fordgobike-tripdata.csv.zip"
+download.file(URL, destfile = "./data/201804-fordgobike-tripdata.csv.zip", method="curl")
+```
+
+Unzip downloaded files.
+
+```{r}
+unzip("./data/201801-fordgobike-tripdata.csv.zip",exdir="./data")
+unzip("./data/201802-fordgobike-tripdata.csv.zip",exdir="./data")
+unzip("./data/201803-fordgobike-tripdata.csv.zip",exdir="./data")
+unzip("./data/201804-fordgobike-tripdata.csv.zip",exdir="./data")
+```
+
+Clean up data directory.
+
+```{r}
+fn <- "./data/201801-fordgobike-tripdata.csv.zip"
+if (file.exists(fn)) file.remove(fn)
+fn <- "./data/201802-fordgobike-tripdata.csv.zip"
+if (file.exists(fn)) file.remove(fn)
+fn <- "./data/201803-fordgobike-tripdata.csv.zip"
+if (file.exists(fn)) file.remove(fn)
+fn <- "./data/201804-fordgobike-tripdata.csv.zip"
+if (file.exists(fn)) file.remove(fn)
+```
+
+Read the.csv files
+
+```{r}
+fordgobike2017 <- read_csv(file="./data/2017-fordgobike-tripdata.csv")
+fordgobike201801 <- read_csv(file="./data/201801-fordgobike-tripdata.csv")
+fordgobike201802 <- read_csv(file="./data/201802-fordgobike-tripdata.csv")
+fordgobike201803 <- read_csv(file="./data/201803-fordgobike-tripdata.csv")
+fordgobike201804 <- read_csv(file="./data/201804-fordgobike-tripdata.csv")
+```
+
+Check the head() and tail() of the data.frames that are loaded.
+
+
+```{r}
+head(fordgobike2017)
+head(fordgobike201801)
+head(fordgobike201802)
+head(fordgobike201803)
+head(fordgobike201804)
+```
+
+
+
+```{r}
+tail(fordgobike2017)
+tail(fordgobike201801)
+tail(fordgobike201802)
+tail(fordgobike201803)
+tail(fordgobike201804)
+```
+
+
