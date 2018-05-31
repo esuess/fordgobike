@@ -3,16 +3,16 @@ title: "Ford Go Bike"
 output: html_notebook
 ---
 
-In this notebook I download and unzip the Ford Go Bike data. 
+In this notebook I download and unzip the [Ford Go Bike](https://www.fordgobike.com/) [data](https://www.fordgobike.com/system-data). 
 
-library(tidyverse)
 ```{r}
 library(tidyverse)
 library(tictoc)
+library(ggmap)
+library(skimr)
+library(lubridate)
+library(forcats)
 ```
-
-
-
 
 Download the files.  First one is not zipped, the remaining are zipped.
 
@@ -82,4 +82,258 @@ tail(fordgobike201803)
 tail(fordgobike201804)
 ```
 
+```{r}
+dim(fordgobike2017)
+
+fordgobike2017 %>% count()
+
+nrow(fordgobike201801) + nrow(fordgobike201802) + nrow(fordgobike201803) + nrow(fordgobike201804)
+
+fordgobike2018 <- bind_rows(fordgobike201801, fordgobike201802, fordgobike201803, fordgobike201804)
+
+dim(fordgobike2018)
+
+fordgobike2018 %>% count()
+
+fordgobike <- bind_rows(fordgobike2017, fordgobike2018)
+
+dim(fordgobike)
+
+fordgobike %>% count()
+
+dim(fordgobike)
+
+fordgobike <- fordgobike %>% mutate(age = 2018 - member_birth_year)
+
+fordgobike %>% count() 
+
+dim(fordgobike)
+
+fordgobike <- fordgobike %>% mutate(year=year(start_time), month=month(start_time), day=day(start_time) )
+
+fordgobike %>% count() 
+
+dim(fordgobike)
+
+fordgobike <- fordgobike %>% mutate(week_day = wday(start_time) )
+
+levels <- c("M","T","W","TH","F","SAT","SUN")
+
+fordgobike$week_day <- factor(fordgobike$week_day, levels = levels)
+
+fordgobike %>% count() 
+
+dim(fordgobike)
+
+```
+
+
+
+```{r}
+
+today()
+
+now()
+```
+
+Age
+
+```{r warning=FALSE}
+fordgobike %>% group_by( age ) %>% count()
+
+fordgobike %>% group_by( age ) %>% summary()
+
+skim(fordgobike)
+
+fordgobike %>% ggplot(aes(x=age)) + geom_histogram()
+
+fordgobike %>% filter(age <= 80) %>% ggplot(aes(x=age)) + geom_histogram()
+
+fordgobike %>% filter(age <= 100) %>% ggplot(aes(x=age)) + geom_histogram()
+
+fordgobike %>% filter(age > 100) %>% ggplot(aes(x=age)) + geom_histogram()
+```
+
+
+```{r}
+fordgobike %>% group_by( member_gender, age ) %>% count()
+
+fordgobike %>% ggplot(aes(x=age, class=member_gender)) + geom_histogram()
+
+fordgobike %>% ggplot(aes(x=age, class=member_gender)) + geom_histogram(aes(y=..density..))
+
+fordgobike %>% filter(age <= 80) %>% ggplot(aes(x=age)) + geom_histogram()
+```
+
+```{r}
+fordgobike %>% filter(age <= 80) %>% ggplot(aes(x=age, color=member_gender)) + 
+  geom_histogram(position="identity") + 
+  facet_grid(member_gender ~ .)
+
+fordgobike %>% filter(age <= 80) %>% ggplot(aes(x=age, color=member_gender)) + 
+  geom_histogram(aes(y=..density..),position="identity") + 
+  facet_grid(member_gender ~ .)
+
+```
+
+Year and day of week.
+
+```{r}
+
+fordgobike %>% ggplot(aes(x=year)) + geom_bar()
+fordgobike %>% ggplot(aes(x=month)) + geom_bar() + facet_grid(year ~ .)
+fordgobike %>% ggplot(aes(x=day)) + geom_bar() + facet_grid(year ~ .)
+
+
+```
+
+```{r}
+fordgobike %>% ggplot(aes(x=as.factor(week_day))) + geom_bar()
+```
+
+
+
+```{r}
+library(biganalytics)
+
+# run in parallel, the doMC package runs on Windows
+library(doParallel)
+registerDoParallel(cores = 8)
+
+fordgobike_subset <- fordgobike[,c(6,7)]
+
+fordgobike_subset2 <- as.matrix(fordgobike_subset)
+
+cl <- bigkmeans(fordgobike_subset2, 3, nstart=8)
+
+fordgobike_subset %>% ggplot(aes(x=start_station_longitude, y=start_station_latitude, color=cl$cluster)) +
+  geom_point()
+```
+
+
+
+```{r}
+
+fordgobike_subset <- fordgobike[,c(6,7)]
+
+cl <- kmeans(fordgobike_subset, 3)
+
+fordgobike_subset %>% ggplot(aes(x=start_station_longitude, y=start_station_latitude, color=cl$cluster)) +
+  geom_point()
+  
+
+```
+
+```{r}
+cl$centers
+```
+
+
+```{r}
+bayarea <- get_map(location = "hayward")
+
+ggmap(bayarea) +
+  geom_point(data = fordgobike_subset, aes(x = start_station_longitude, y = start_station_latitude, color  = cl$cluster, alpha = 0.1), size = 2, shape = 19)  # 21
+```
+
+
+```{r}
+fordgobike <- fordgobike %>% mutate(city = cl$cluster)
+
+fordgobike %>% head()
+```
+
+
+
+
+```{r}
+fordgobike_subset <- fordgobike[,c(10,11)]
+
+cl <- kmeans(fordgobike_subset, 3)
+
+fordgobike_subset %>% ggplot(aes(x=end_station_longitude, y=end_station_latitude, color=cl$cluster)) +
+  geom_point()
+```
+
+
+```{r}
+cl$centers
+```
+
+
+```{r}
+bayarea <- get_map(location = "hayward")
+
+ggmap(bayarea) +
+  geom_point(data = fordgobike_subset, aes(x = end_station_longitude, y = end_station_latitude, color  = cl$cluster, alpha = 0.1), size = 2, shape = 19)  # 21
+```
+
+```{r}
+
+fordgobike %>% ggplot(aes(x=member_gender, y=duration_sec)) + geom_bar(stat="Identity")
+```
+
+
+```{r}
+fordgobike %>% ggplot(aes(x=duration_sec, y=..density..)) + 
+  scale_x_continuous(limits = c(0, 10000)) +
+  geom_histogram() +
+  geom_density(aes(y=..density..)) 
+
+fordgobike %>% ggplot(aes(log(x=duration_sec), y=..density..)) + 
+  geom_histogram() +
+  geom_density(aes(y=..density..)) 
+
+fordgobike %>% ggplot(aes(x=duration_sec, y=..density..)) + 
+  scale_x_continuous(limits = c(0, 10000)) +
+  geom_histogram() + 
+  geom_density(aes(y=..density..)) +
+  facet_grid(member_gender ~ .)
+
+fordgobike %>% ggplot(aes(log(x=duration_sec), y=..density..)) + 
+  geom_histogram() + 
+  geom_density(aes(y=..density..)) +
+  facet_grid(member_gender ~ .)
+```
+
+```{r}
+fordgobike %>% ggplot(aes(x=duration_sec, y=..density..)) + 
+  scale_x_continuous(limits = c(0, 10000)) +
+  geom_histogram() +
+  geom_density(aes(y=..density..)) +
+  facet_grid(city ~ .) 
+
+fordgobike %>% ggplot(aes(log(x=duration_sec), y=..density..)) + 
+  geom_histogram() +
+  geom_density(aes(y=..density..)) +
+  facet_grid(city ~ .) 
+
+fordgobike %>% ggplot(aes(x=duration_sec, y=..density..)) + 
+  scale_x_continuous(limits = c(0, 10000)) +
+  geom_histogram() + 
+  geom_density(aes(y=..density..)) +
+  facet_grid(city ~ .) 
+
+fordgobike %>% ggplot(aes(log(x=duration_sec), y=..density..)) + 
+  geom_histogram() + 
+  geom_density(aes(y=..density..)) +
+  facet_grid(city ~ .) 
+```
+
+
+
+```{r}
+
+fordgobike %>% filter(city == 1) %>% 
+  group_by( member_gender ) %>%
+  summarize(dur_mean = mean(duration_sec), dur_sd = sd(duration_sec))
+
+fordgobike %>% filter(city == 2) %>% 
+  group_by( member_gender ) %>%
+  summarize(dur_mean = mean(duration_sec), dur_sd = sd(duration_sec))
+
+fordgobike %>% filter(city == 3) %>% 
+  group_by( member_gender ) %>%
+  summarize(dur_mean = mean(duration_sec), dur_sd = sd(duration_sec))
+```
 

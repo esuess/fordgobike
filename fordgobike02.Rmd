@@ -1,0 +1,69 @@
+---
+title: "Ford Go Bike API"
+output: html_notebook
+---
+
+[General Bikeshare Feed Specification (GBFS)](https://github.com/NABSA/gbfs/blob/master/gbfs.md)
+
+[R gbfs](https://github.com/ds-civic-data/gbfs)
+
+[NBSA](https://github.com/NABSA) [system.csv](https://github.com/NABSA/gbfs/blob/master/systems.csv)
+
+
+
+```{r, eval=FALSE}
+install_github("ds-civic-data/gbfs")
+```
+
+```{r}
+library(gbfs)
+library(tidyverse)
+library(ggmap)
+```
+
+```{r}
+withr::with_dir(tempdir(), get_gbfs(city = "https://gbfs.fordgobike.com/gbfs/gbfs.json", feeds = "all", directory = "pdx_gbfs"))
+
+withr::with_dir(tempdir(), list.files("pdx_gbfs"))
+```
+
+```{r}
+station_information <- withr::with_dir(tempdir(), readRDS("pdx_gbfs/station_information.rds"))
+head(station_information)
+nrow(station_information)
+
+
+station_information %>% ggplot(aes(x=lon, y=lat, color=region_id)) + geom_point()
+
+bayarea <- get_map(location = "hayward")
+
+ggmap(bayarea) +
+  geom_point(data = station_information, aes(x = lon, y = lat,  color  = region_id, alpha = 0.1), size = 2, shape = 19)  # 21
+
+```
+
+```{r}
+station_status <- withr::with_dir(tempdir(), readRDS("pdx_gbfs/station_status.rds"))
+head(station_status)
+nrow(station_status)
+```
+
+```{r}
+system_alerts <- withr::with_dir(tempdir(), readRDS("pdx_gbfs/system_alerts.rds"))
+head(system_alerts)
+nrow(system_alerts)
+```
+
+```{r}
+system_information <- withr::with_dir(tempdir(), readRDS("pdx_gbfs/system_information.rds"))
+head(system_information)
+nrow(system_information)
+```
+
+```{r}
+system_regions <- withr::with_dir(tempdir(), readRDS("pdx_gbfs/system_regions.rds"))
+head(system_regions)
+nrow(system_regions)
+```
+
+
